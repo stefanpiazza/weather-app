@@ -1,0 +1,154 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title></title>
+
+		<!-- <link rel="stylesheet" href="img/icons/weather/pe-icon-set-weather/css/pe-icon-set-weather.min.css"> -->
+
+        <style type="text/css">
+            html, body {
+                padding: 0;
+                margin: 0;
+            }
+
+            .app {
+
+            }
+
+            .day {
+                display: flex;
+                display: -webkit-flex;
+                align-items: center;
+                justify-content: center;
+                flex-direction: column;
+
+                min-height: 100vh;
+            }
+
+            .icon {
+                width: 90%;
+                height: 250px;
+                background-size: contain;
+                background-repeat: no-repeat;
+                background-position: center;                
+            }
+
+            .clouds {
+                background-image: url('img/icons/weather/svg/mostly-cloudy-1.svg');
+            }
+
+            .few.clouds {
+                background-image: url('img/icons/weather/svg/partly-cloudy-1.svg');
+            }
+
+            .rain {
+                background-image: url('img/icons/weather/svg/rain-1.svg');
+            }
+
+            .thunderstorm {
+                background-image: url('img/icons/weather/svg/thunderstorm.svg');
+            }
+
+            .drizzle {
+                background-image: url('img/icons/weather/svg/drizzle.svg');
+            }
+
+            .snow {
+                background-image: url('img/icons/weather/svg/snow.svg');   
+            }
+
+            .clear {
+                background-image: url('img/icons/weather/svg/sun-1.svg');   
+            }
+
+            .haze {
+                background-image: url('img/icons/weather/svg/mist.svg');
+            }
+
+            p {
+                text-transform: capitalize;
+            }
+
+            ul {
+                list-style: none;
+                padding: 0;
+                margin: 0;
+            }
+
+            li {
+                float: left;
+            }
+        </style>
+    </head>
+    <body>
+    	<div class='app'></div>
+      
+    	<script type="text/template"></script>
+
+	    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js" type="text/javascript"></script>
+	    <script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js" type="text/javascript"></script>
+	    <script src="http://cdnjs.cloudflare.com/ajax/libs/backbone.js/1.2.3/backbone-min.js" type="text/javascript"></script>
+
+    	<script type="text/template" id="weather-template">
+            <div class='day'>
+                <h1 class="location"><%= this.weatherModel.get('name') %></h1>
+                <div class='icon <%= this.weatherModel.get("weather")[0].description %>'></div>            
+                <p class='description'><%= this.weatherModel.get('weather')[0].description %></p>
+
+                <ul>
+                    <li class='wind'>Wind: <%= this.weatherModel.get('wind')['speed'] %></li>
+                    <li class='temperature'>Temperature: <%= Math.round(this.weatherModel.get('main')['temp'] - 273.15) %></li>
+                <ul>
+            </div>
+    	</script>
+
+    	<script type="text/javascript">
+    		var app = {};
+
+    		// app.AppView = Backbone.View.extend({
+    		// 	el: '.app',
+
+    		// 	initialize: function () {
+    		// 		this.render();
+    		// 	},
+
+    		// 	render: function () {
+
+    		// 	}
+    		// });
+
+    		app.WeatherView = Backbone.View.extend({
+    			el: '.app',
+    			template: _.template($('#weather-template').html()),
+
+    			initialize: function () {
+    				this.weatherModel = new app.WeatherModel();
+    				this.listenTo(this.weatherModel, "change", this.render);
+    				this.getWeather();
+    			},
+
+    			getWeather: function () {
+    				this.weatherModel.fetch();
+    			},
+
+    			events: function () {
+
+    			},
+
+    			render: function () {
+					this.$el.html(this.template(this.weatherModel.toJSON()));
+    			}
+    		});
+
+    		app.WeatherModel = Backbone.Model.extend({
+    			url: 'http://api.openweathermap.org/data/2.5/weather?q=London&appid=2de143494c0b295cca9337e1e96b00e0'
+    		});
+
+    		// app.appView = new app.AppView();
+    		app.weatherView = new app.WeatherView();
+    	</script>
+    </body>
+</html>
