@@ -64,11 +64,11 @@
                 background-image: url('img/icons/weather/svg/sun-1.svg');   
             }
 
-            .haze {
+            .haze, .mist {
                 background-image: url('img/icons/weather/svg/mist.svg');
             }
 
-            p {
+            .temperature {
                 text-transform: capitalize;
             }
 
@@ -86,69 +86,116 @@
     <body>
     	<div class='app'></div>
       
-    	<script type="text/template"></script>
-
-	    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js" type="text/javascript"></script>
-	    <script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js" type="text/javascript"></script>
-	    <script src="http://cdnjs.cloudflare.com/ajax/libs/backbone.js/1.2.3/backbone-min.js" type="text/javascript"></script>
+	    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js" type="text/javascript"></script>
+	    <script src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js" type="text/javascript"></script>
+	    <script src="//cdnjs.cloudflare.com/ajax/libs/backbone.js/1.2.3/backbone-min.js" type="text/javascript"></script>
 
     	<script type="text/template" id="weather-template">
-            <div class='day'>
-                <h1 class="location"><%= this.weatherModel.get('name') %></h1>
-                <div class='icon <%= this.weatherModel.get("weather")[0].description %>'></div>            
-                <p class='description'><%= this.weatherModel.get('weather')[0].description %></p>
+            <form>
+                <input name='text' type='text'>
+                <input type='submit' value='Search'>
+            </form>
 
-                <ul>
-                    <li class='wind'>Wind: <%= this.weatherModel.get('wind')['speed'] %></li>
-                    <li class='temperature'>Temperature: <%= Math.round(this.weatherModel.get('main')['temp'] - 273.15) %></li>
-                <ul>
-            </div>
+            <% _.each(models, function(model) { %>
+
+                <div class='day'>
+                    <h1 class="location"><%= model.get('name') %></h1>
+                    <div class='icon <%= model.get("weather")[0].description.toLowerCase() %>'></div>            
+                    <p class='description'><%= model.get('weather')[0].description %></p>
+
+                    <ul>
+                        <li class='wind'>Wind: <%= model.get('wind')['speed'] %></li>
+                        <li class='temperature'>Temperature: <%= Math.round(model.get('main')['temp'] - 273.15) %></li>
+                    <ul>
+                </div>
+
+            <% }); %>
     	</script>
 
     	<script type="text/javascript">
-    		var app = {};
+            // (function () {
+                var app = {};
 
-    		// app.AppView = Backbone.View.extend({
-    		// 	el: '.app',
+                app.AppView = Backbone.View.extend({
+                    initialize: function () {
+                        app.weatherCollection = new app.WeatherCollection();
+                        app.weatherView = new app.WeatherView();
+                    }
+                });
 
-    		// 	initialize: function () {
-    		// 		this.render();
-    		// 	},
+                app.WeatherView = Backbone.View.extend({
+                    el: '.app',
+                    template: _.template($('#weather-template').html()),
+                    locations: [],
 
-    		// 	render: function () {
+                    initialize: function () {
+                        // this.checkCache();
+                        
+                        // for (var i = 0; i < this.locations.length; i+=1) {
+                        //     this.getWeather(this.locations[i]);
+                        // }
 
-    		// 	}
-    		// });
+                        this.render();
+                    },
 
-    		app.WeatherView = Backbone.View.extend({
-    			el: '.app',
-    			template: _.template($('#weather-template').html()),
+                    render: function () {
+                        this.$el.html(this.template({models: app.weatherCollection.models})); 
+                    },
 
-    			initialize: function () {
-    				this.weatherModel = new app.WeatherModel();
-    				this.listenTo(this.weatherModel, "change", this.render);
-    				this.getWeather();
-    			},
+                    getWeather: function (location) {
+                        var that = this;
+                        var model = new app.WeatherModel();
+                        model.url = 'http://api.openweathermap.org/data/2.5/weather?q=' + location + '&appid=2de143494c0b295cca9337e1e96b00e0';                       
+                        model.fetch({
+                            success: function () {
+                                // if (that.locations.indexOf(location) === -1) {
+                                //     that.locations.push(location);
+                                //     localStorage.setItem('weatherCollection', JSON.stringify(that.locations));
+                                // }
 
-    			getWeather: function () {
-    				this.weatherModel.fetch();
-    			},
+                                // else {
+                                //     that.locations = that.locations.splice(that.locations.indexOf(location), 1);
+                                //     that.locations.push(location);
+                                // }
 
-    			events: function () {
+                                // console.log(app.weatherCollection.get(model));
+                                // console.log(app.weatherCollection);
 
-    			},
+                                app.weatherCollection.push(model, {merge: true}); 
+                                that.render(); 
+                            }
+                        })                    
+                    },
 
-    			render: function () {
-					this.$el.html(this.template(this.weatherModel.toJSON()));
-    			}
-    		});
+                    checkCache: function () {
+                        if (localStorage.getItem('weatherCollection') !== null) {
+                            this.locations = localStorage.getItem('weatherCollection');
+                            this.locations = JSON.parse(this.locations);
+                        }                   
+                    },
 
-    		app.WeatherModel = Backbone.Model.extend({
-    			url: 'http://api.openweathermap.org/data/2.5/weather?q=London&appid=2de143494c0b295cca9337e1e96b00e0'
-    		});
+                    events: {
+                        'submit' : 'submit'
+                    },
 
-    		// app.appView = new app.AppView();
-    		app.weatherView = new app.WeatherView();
+                    submit: function (event) {
+                        event.preventDefault();
+                        if (event.target.text.value.length !== 0) {
+                            this.getWeather(event.target.text.value);
+                        }
+                    }
+                });
+
+                app.WeatherModel = Backbone.Model.extend({
+                    url: ''
+                });
+
+                app.WeatherCollection = Backbone.Collection.extend({
+                    model: app.WeatherModel
+                });
+
+                app.appView = new app.AppView();
+            // })();
     	</script>
     </body>
 </html>
